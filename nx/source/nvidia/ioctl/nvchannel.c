@@ -1,4 +1,5 @@
 #include <string.h>
+#include <malloc.h>
 #include "types.h"
 #include "result.h"
 #include "services/nv.h"
@@ -28,9 +29,10 @@ Result nvioctlChannel_SubmitGpfifo(u32 fd, nvioctl_gpfifo_entry *entries, u32 nu
         __nv_in    u32 num_entries;      // number of entries being submitted
         __nv_in    u32 flags;
         __nv_inout nvioctl_fence fence;  // returned new fence object for others to wait on
-        __nv_in    nvioctl_gpfifo_entry entries[num_entries]; // depends on num_entries
+        __nv_in    nvioctl_gpfifo_entry *entries; // depends on num_entries
     } data;
 
+    data.entries = (nvioctl_gpfifo_entry*)(malloc(num_entries * sizeof(nvioctl_gpfifo_entry)));
     memset(&data, 0, sizeof(data));
     data.gpfifo = (u64)data.entries; // ignored
     data.num_entries = num_entries;
@@ -43,6 +45,8 @@ Result nvioctlChannel_SubmitGpfifo(u32 fd, nvioctl_gpfifo_entry *entries, u32 nu
     if (R_SUCCEEDED(rc)) {
         *fence_inout = data.fence;
     }
+
+    free(data.entries);
 
     return rc;
 }
@@ -208,13 +212,20 @@ Result nvioctlChannel_Submit(u32 fd, const nvioctl_cmdbuf *cmdbufs, u32 num_cmdb
         __nv_in  u32                 num_relocs;
         __nv_in  u32                 num_syncpt_incrs;
         __nv_in  u32                 num_fences;
-        __nv_in  nvioctl_cmdbuf      cmdbufs     [num_cmdbufs];
-        __nv_in  nvioctl_reloc       relocs      [num_relocs];
-        __nv_in  nvioctl_reloc_shift reloc_shifts[num_relocs];
-        __nv_in  nvioctl_syncpt_incr syncpt_incrs[num_syncpt_incrs];
-        __nv_in  nvioctl_syncpt_incr wait_checks [num_syncpt_incrs];
-        __nv_out nvioctl_fence       fences      [num_fences];
+        __nv_in  nvioctl_cmdbuf      *cmdbufs;
+        __nv_in  nvioctl_reloc       *relocs;
+        __nv_in  nvioctl_reloc_shift *reloc_shifts;
+        __nv_in  nvioctl_syncpt_incr *syncpt_incrs;
+        __nv_in  nvioctl_syncpt_incr *wait_checks;
+        __nv_out nvioctl_fence       *fences;
     } data;
+
+    data.cmdbufs = (nvioctl_cmdbuf*)malloc(num_cmdbufs * sizeof(nvioctl_cmdbuf));
+    data.relocs = (nvioctl_reloc*)malloc(num_relocs * sizeof(nvioctl_reloc));
+    data.reloc_shifts = (nvioctl_reloc_shift*)malloc(num_relocs * sizeof(nvioctl_reloc_shift));
+    data.syncpt_incrs = (nvioctl_syncpt_incr*)malloc(num_syncpt_incrs * sizeof(nvioctl_syncpt_incr));
+    data.wait_checks = (nvioctl_syncpt_incr*)malloc(num_syncpt_incrs * sizeof(nvioctl_syncpt_incr));
+    data.fences = (nvioctl_fence*)malloc(num_fences * sizeof(nvioctl_fence));
 
     memset(&data, 0, sizeof(data));
     data.num_cmdbufs      = num_cmdbufs;
@@ -233,6 +244,13 @@ Result nvioctlChannel_Submit(u32 fd, const nvioctl_cmdbuf *cmdbufs, u32 num_cmdb
         for (int i = 0; i < num_fences; ++i)
             fences[i].id = data.syncpt_incrs[i].syncpt_id;
     }
+
+    free(data.cmdbufs);
+    free(data.relocs);
+    free(data.reloc_shifts);
+    free(data.syncpt_incrs);
+    free(data.wait_checks);
+    free(data.fences);
 
     return rc;
 }
@@ -278,8 +296,10 @@ Result nvioctlChannel_MapCommandBuffer(u32 fd, nvioctl_command_buffer_map *maps,
         __nv_in    u32                        num_maps;
         __nv_in    u32                        reserved;
         __nv_in    u8                         is_compressed;
-        __nv_inout nvioctl_command_buffer_map maps[num_maps];
+        __nv_inout nvioctl_command_buffer_map *maps;
     } data;
+
+    data.maps = (nvioctl_command_buffer_map*)malloc(num_maps * sizeof(nvioctl_command_buffer_map));
 
     memset(&data, 0, sizeof(data));
     data.num_maps      = num_maps;
@@ -290,6 +310,8 @@ Result nvioctlChannel_MapCommandBuffer(u32 fd, nvioctl_command_buffer_map *maps,
 
     if (R_SUCCEEDED(rc))
         memcpy(maps, data.maps, num_maps * sizeof(nvioctl_command_buffer_map));
+
+    free(data.maps);
 
     return rc;
 }
@@ -302,13 +324,17 @@ Result nvioctlChannel_UnmapCommandBuffer(u32 fd, const nvioctl_command_buffer_ma
         __nv_in    u32                        num_maps;
         __nv_in    u32                        reserved;
         __nv_in    u8                         is_compressed;
-        __nv_inout nvioctl_command_buffer_map maps[num_maps];
+        __nv_inout nvioctl_command_buffer_map *maps;
     } data;
+
+    data.maps = (nvioctl_command_buffer_map*)malloc(num_maps * sizeof(nvioctl_command_buffer_map));
 
     memset(&data, 0, sizeof(data));
     data.num_maps      = num_maps;
     data.is_compressed = compressed;
     memcpy(data.maps, maps, sizeof(data.maps));
+
+    free(data.maps);
 
     return nvIoctl(fd, _NV_IOWR(0, 0x0a, data), &data);
 }

@@ -1,4 +1,5 @@
 #include <string.h>
+#include <malloc.h>
 #include "types.h"
 #include "result.h"
 #include "display/parcel.h"
@@ -268,7 +269,7 @@ Result bqSetPreallocatedBuffer(Binder *b, s32 buf, const BqGraphicBuffer *input)
             u32 numFds;
             u32 numInts;
 
-            u32 ints[input->native_handle->num_ints];
+            u32 *ints;
         } buf;
 
         // Serialize the buffer
@@ -282,9 +283,11 @@ Result bqSetPreallocatedBuffer(Binder *b, s32 buf, const BqGraphicBuffer *input)
         buf.refcount = 0; // Official sw sets this to the output of android_atomic_inc(). We instead don't care and set it to zero since it is ignored during marshalling.
         buf.numFds = 0;
         buf.numInts = input->native_handle->num_ints;
-        memcpy(buf.ints, input->native_handle+1, sizeof(buf.ints));
+        buf.ints = (u32*)malloc(buf.numInts * sizeof(u32));
+        memcpy(buf.ints, input->native_handle+1, sizeof(u32) * buf.numInts);
 
         parcelWriteFlattenedObject(&parcel, &buf, sizeof(buf));
+        free(buf.ints);
     }
 
     rc = parcelTransact(b, SET_PREALLOCATED_BUFFER, &parcel, &parcel_reply);
