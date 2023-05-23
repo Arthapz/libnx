@@ -316,8 +316,8 @@ typedef struct {
     Mutex mutex;
     void* event_type;   ///< Not set with sharedmem.
     u8 data[0x2710];
-    s32 write_offset;
-    s32 read_offset;
+    _Atomic s32 write_offset;
+    _Atomic s32 read_offset;
     u64 utilization;
     char name[0x11];
     u8 initialized;

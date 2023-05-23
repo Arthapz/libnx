@@ -45,8 +45,8 @@ typedef struct {
     Result res;                                ///< Result.
     u32 pad;                                   ///< Padding.
     u8 unused[0x18];                           ///< Initialized sysmodule-side, not used by sdknso.
-    u64 latest_entry;                          ///< Latest entry.
-    u64 total_entries;                         ///< Total entries.
+    _Atomic u64 latest_entry;                  ///< Latest entry.
+    _Atomic u64 total_entries;                 ///< Total entries.
 } HidbusDataAccessorHeader;
 
 /// HidbusJoyDisableSixAxisPollingDataAccessorEntryData
@@ -59,7 +59,7 @@ typedef struct {
 
 /// HidbusJoyDisableSixAxisPollingDataAccessorEntry
 typedef struct {
-    u64 sampling_number;                                         ///< SamplingNumber
+    _Atomic u64 sampling_number;                                 ///< SamplingNumber
     HidbusJoyDisableSixAxisPollingDataAccessorEntryData data;    ///< \ref HidbusJoyDisableSixAxisPollingDataAccessorEntryData
 } HidbusJoyDisableSixAxisPollingDataAccessorEntry;
 
@@ -73,21 +73,21 @@ typedef struct {
 
 /// HidbusJoyEnableSixAxisPollingDataAccessorEntry
 typedef struct {
-    u64 sampling_number;                                         ///< SamplingNumber
+    _Atomic u64 sampling_number;                                 ///< SamplingNumber
     HidbusJoyEnableSixAxisPollingDataAccessorEntryData data;     ///< \ref HidbusJoyEnableSixAxisPollingDataAccessorEntryData
 } HidbusJoyEnableSixAxisPollingDataAccessorEntry;
 
 /// HidbusJoyButtonOnlyPollingDataAccessorEntryData
 typedef struct {
-    u8 data[0x2c];                             ///< Data.
-    u8 out_size;                               ///< Size of data.
-    u8 pad[3];                                 ///< Padding.
-    u64 sampling_number;                       ///< SamplingNumber
+    u8 data[0x2c];                     ///< Data.
+    u8 out_size;                       ///< Size of data.
+    u8 pad[3];                         ///< Padding.
+    u64 sampling_number;               ///< SamplingNumber
 } HidbusJoyButtonOnlyPollingDataAccessorEntryData;
 
 /// HidbusJoyButtonOnlyPollingDataAccessorEntry
 typedef struct {
-    u64 sampling_number;                                         ///< SamplingNumber
+    _Atomic u64 sampling_number;                                 ///< SamplingNumber
     HidbusJoyButtonOnlyPollingDataAccessorEntryData data;        ///< \ref HidbusJoyEnableSixAxisPollingDataAccessorEntryData
 } HidbusJoyButtonOnlyPollingDataAccessorEntry;
 
@@ -111,14 +111,14 @@ typedef struct {
 
 /// Common data for HidbusStatusManagerEntry*.
 typedef struct {
-    u8 is_connected;               ///< IsConnected
+    _Atomic u8 is_connected;       ///< IsConnected
     u8 pad[3];                     ///< Padding.
     Result is_connected_result;    ///< IsConnectedResult
-    u8 is_enabled;                 ///< Flag indicating whether a device is enabled (\ref hidbusEnableExternalDevice).
-    u8 is_in_focus;                ///< Flag indicating whether this entry is valid.
-    u8 is_polling_mode;            ///< Flag indicating whether polling is enabled (\ref hidbusEnableJoyPollingReceiveMode).
+    _Atomic u8 is_enabled;         ///< Flag indicating whether a device is enabled (\ref hidbusEnableExternalDevice).
+    _Atomic u8 is_in_focus;        ///< Flag indicating whether this entry is valid.
+    _Atomic u8 is_polling_mode;            ///< Flag indicating whether polling is enabled (\ref hidbusEnableJoyPollingReceiveMode).
     u8 reserved;                   ///< Reserved
-    u32 polling_mode;              ///< \ref HidbusJoyPollingMode
+    _Atomic u32 polling_mode;              ///< \ref HidbusJoyPollingMode
 } HidbusStatusManagerEntryCommon;
 
 /// HidbusStatusManagerEntry on 5.x.

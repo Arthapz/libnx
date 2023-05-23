@@ -348,8 +348,8 @@ typedef struct {
 
 /// ProcessorState
 typedef struct {
-    s64 start;                                          ///< Start
-    u32 count;                                          ///< Count
+    _Atomic s64 start;                                          ///< Start
+    _Atomic u32 count;                                          ///< Count
     u32 pad;                                            ///< Padding
 
     u8 data[0xe10];                                     ///< Contains an array of *ProcessorState, depending on IrsDeviceFormat::ir_sensor_mode.
@@ -357,9 +357,9 @@ typedef struct {
 
 /// DeviceFormat
 typedef struct {
-    u32 ir_camera_status;                                   ///< \ref IrsIrCameraStatus
-    u32 ir_camera_internal_status;                          ///< \ref IrsIrCameraInternalStatus
-    u32 ir_sensor_mode;                                     ///< \ref IrsIrSensorMode
+    _Atomic u32 ir_camera_status;                           ///< \ref IrsIrCameraStatus
+    _Atomic u32 ir_camera_internal_status;                  ///< \ref IrsIrCameraInternalStatus
+    _Atomic u32 ir_sensor_mode;                             ///< \ref IrsIrSensorMode
     u32 pad;                                                ///< Padding
 
     IrsProcessorState processor_state;                      ///< \ref IrsProcessorState
@@ -367,9 +367,9 @@ typedef struct {
 
 /// AruidFormat
 typedef struct {
-    u64 ir_sensor_aruid;        ///< IrSensorAruid
-    u32 ir_sensor_aruid_status; ///< IrSensorAruidStatus
-    u32 pad;                    ///< Padding
+    _Atomic u64 ir_sensor_aruid;        ///< IrSensorAruid
+    _Atomic u32 ir_sensor_aruid_status; ///< IrSensorAruidStatus
+    u32 pad;                            ///< Padding
 } IrsAruidFormat;
 
 /// StatusManager

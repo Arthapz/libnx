@@ -212,9 +212,9 @@ static size_t _hidGetStates(HidCommonLifoHeader *header, void* in_states, size_t
 
         u64 sampling_number0=0, sampling_number1=0;
 
-        sampling_number0 = atomic_load_explicit((u64*)state_entry, memory_order_acquire);
+        sampling_number0 = atomic_load_explicit((_Atomic u64*)state_entry, memory_order_acquire);
         memcpy(out_state, (void*)((uintptr_t)state_entry + state_offset), entrysize);
-        sampling_number1 = atomic_load_explicit((u64*)state_entry, memory_order_acquire);
+        sampling_number1 = atomic_load_explicit((_Atomic u64*)state_entry, memory_order_acquire);
 
         if (sampling_number0 != sampling_number1 || (i>0 && *((u64*)((uintptr_t)out_state+sampling_number_offset)) - *((u64*)((uintptr_t)out_state_prev+sampling_number_offset)) != 1)) {
             s32 tmpcount = (s32)atomic_load_explicit(&header->count, memory_order_acquire);

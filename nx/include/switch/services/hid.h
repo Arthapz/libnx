@@ -607,8 +607,8 @@ typedef struct HidDirectionState {
 typedef struct HidCommonLifoHeader {
     u64 unused;                                 ///< Unused
     u64 buffer_count;                           ///< BufferCount
-    u64 tail;                                   ///< Tail
-    u64 count;                                  ///< Count
+    _Atomic u64 tail;                                   ///< Tail
+    _Atomic u64 count;                                  ///< Count
 } HidCommonLifoHeader;
 
 // Begin HidDebugPad
@@ -960,8 +960,8 @@ typedef struct HidNfcXcdDeviceHandleState {
 
 /// HidNpadInternalState
 typedef struct HidNpadInternalState {
-    u32 style_set;                               ///< Bitfield of \ref HidNpadStyleTag.
-    u32 joy_assignment_mode;                     ///< \ref HidNpadJoyAssignmentMode
+    _Atomic u32 style_set;                       ///< Bitfield of \ref HidNpadStyleTag.
+    _Atomic u32 joy_assignment_mode;             ///< \ref HidNpadJoyAssignmentMode
     HidNpadFullKeyColorState full_key_color;     ///< \ref HidNpadFullKeyColorState
     HidNpadJoyColorState joy_color;              ///< \ref HidNpadJoyColorState
 
@@ -980,28 +980,28 @@ typedef struct HidNpadInternalState {
     HidNpadSixAxisSensorLifo joy_left_six_axis_sensor_lifo;                         ///< JoyLeftSixAxisSensorLifo
     HidNpadSixAxisSensorLifo joy_right_six_axis_sensor_lifo;                        ///< JoyRightSixAxisSensorLifo
 
-    u32 device_type;                             ///< Bitfield of \ref HidDeviceTypeBits.
+    _Atomic u32 device_type;                     ///< Bitfield of \ref HidDeviceTypeBits.
     u32 reserved;                                ///< Reserved
-    HidNpadSystemProperties system_properties;
-    HidNpadSystemButtonProperties system_button_properties;
-    u32 battery_level[3];
+    _Atomic HidNpadSystemProperties system_properties;
+    _Atomic HidNpadSystemButtonProperties system_button_properties;
+    _Atomic u32 battery_level[3];
     union {
         struct { // [1.0.0-3.0.2]
             HidNfcXcdDeviceHandleState nfc_xcd_device_handle;
         };
 
         struct {
-            u32 applet_footer_ui_attribute;                                         ///< Bitfield of AppletFooterUiAttribute.
-            u8 applet_footer_ui_type;                                               ///< \ref HidAppletFooterUiType
+            _Atomic u32 applet_footer_ui_attribute;                                 ///< Bitfield of AppletFooterUiAttribute.
+            _Atomic u8 applet_footer_ui_type;                                       ///< \ref HidAppletFooterUiType
             u8 reserved_x41AD[0x5B];
         };
     };
     u8 reserved_x4208[0x20];                                                        ///< Mutex on pre-10.0.0.
     HidNpadGcTriggerLifo gc_trigger_lifo;
-    u32 lark_type_l_and_main;                                                       ///< \ref HidNpadLarkType
-    u32 lark_type_r;                                                                ///< \ref HidNpadLarkType
-    u32 lucia_type;                                                                 ///< \ref HidNpadLuciaType
-    u32 lager_type;                                                                 ///< \ref HidNpadLagerType
+    _Atomic u32 lark_type_l_and_main;                                               ///< \ref HidNpadLarkType
+    _Atomic u32 lark_type_r;                                                        ///< \ref HidNpadLarkType
+    _Atomic u32 lucia_type;                                                         ///< \ref HidNpadLuciaType
+    _Atomic u32 lager_type;                                                         ///< \ref HidNpadLagerType
 } HidNpadInternalState;
 
 /// HidNpadSharedMemoryEntry
