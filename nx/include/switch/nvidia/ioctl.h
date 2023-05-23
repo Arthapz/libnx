@@ -33,6 +33,7 @@
 #define _NV_IOR(type,nr,size)	_NV_IOC(_NV_IOC_READ,(type),(nr),sizeof(size))
 #define _NV_IOW(type,nr,size)	_NV_IOC(_NV_IOC_WRITE,(type),(nr),sizeof(size))
 #define _NV_IOWR(type,nr,size)	_NV_IOC(_NV_IOC_READ|_NV_IOC_WRITE,(type),(nr),sizeof(size))
+#define _NV_IOWR_(type,nr,size)	_NV_IOC(_NV_IOC_READ|_NV_IOC_WRITE,(type),(nr),size)
 
 /* used to decode ioctl numbers.. */
 #define _NV_IOC_DIR(nr)		(((nr) >> _NV_IOC_DIRSHIFT) & _NV_IOC_DIRMASK)

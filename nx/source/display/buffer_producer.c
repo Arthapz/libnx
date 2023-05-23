@@ -1,5 +1,5 @@
 #include <string.h>
-#include <malloc.h>
+#include <alloca.h>
 #include "types.h"
 #include "result.h"
 #include "display/parcel.h"
@@ -255,7 +255,7 @@ Result bqSetPreallocatedBuffer(Binder *b, s32 buf, const BqGraphicBuffer *input)
 
     parcelWriteInt32(&parcel, hasInput);
     if (hasInput) {
-        struct {
+        struct _Data {
             u32 magic;
             u32 width;
             u32 height;
@@ -269,25 +269,25 @@ Result bqSetPreallocatedBuffer(Binder *b, s32 buf, const BqGraphicBuffer *input)
             u32 numFds;
             u32 numInts;
 
-            u32 *ints;
-        } buf;
+            u32 ints[];
+        };
+        const size_t buf_size = sizeof(struct _Data) + input->native_handle->num_ints * sizeof(u32);
+        struct _Data *buf = (struct _Data*)alloca(buf_size);
 
         // Serialize the buffer
-        buf.magic = 0x47424652; // GBFR (Graphic Buffer)
-        buf.width = input->width;
-        buf.height = input->height;
-        buf.stride = input->stride;
-        buf.format = input->format;
-        buf.usage = input->usage;
-        buf.pid = 42; // Official sw sets this to the value of getpid(), which is hardcoded to return 42.
-        buf.refcount = 0; // Official sw sets this to the output of android_atomic_inc(). We instead don't care and set it to zero since it is ignored during marshalling.
-        buf.numFds = 0;
-        buf.numInts = input->native_handle->num_ints;
-        buf.ints = (u32*)malloc(buf.numInts * sizeof(u32));
-        memcpy(buf.ints, input->native_handle+1, sizeof(u32) * buf.numInts);
+        buf->magic = 0x47424652; // GBFR (Graphic Buffer)
+        buf->width = input->width;
+        buf->height = input->height;
+        buf->stride = input->stride;
+        buf->format = input->format;
+        buf->usage = input->usage;
+        buf->pid = 42; // Official sw sets this to the value of getpid(), which is hardcoded to return 42.
+        buf->refcount = 0; // Official sw sets this to the output of android_atomic_inc(). We instead don't care and set it to zero since it is ignored during marshalling.
+        buf->numFds = 0;
+        buf->numInts = input->native_handle->num_ints;
 
-        parcelWriteFlattenedObject(&parcel, &buf, sizeof(buf));
-        free(buf.ints);
+        memcpy(&buf->ints[0], input->native_handle+1, sizeof(u32) * buf->numInts);
+        parcelWriteFlattenedObject(&parcel, buf, buf_size);
     }
 
     rc = parcelTransact(b, SET_PREALLOCATED_BUFFER, &parcel, &parcel_reply);

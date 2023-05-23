@@ -1,5 +1,5 @@
 #include <string.h>
-#include <malloc.h>
+#include <alloca.h>
 #include "types.h"
 #include "result.h"
 #include "services/nv.h"
@@ -24,29 +24,28 @@ Result nvioctlChannel_SubmitGpfifo(u32 fd, nvioctl_gpfifo_entry *entries, u32 nu
     if(num_entries > 0x200)
         return MAKERESULT(Module_Libnx, LibnxError_OutOfMemory);
 
-    struct {
+    struct _Data {
         __nv_in    u64 gpfifo;           // (ignored) pointer to gpfifo entry structs
         __nv_in    u32 num_entries;      // number of entries being submitted
         __nv_in    u32 flags;
         __nv_inout nvioctl_fence fence;  // returned new fence object for others to wait on
-        __nv_in    nvioctl_gpfifo_entry *entries; // depends on num_entries
-    } data;
+        __nv_in    nvioctl_gpfifo_entry entries[]; // depends on num_entries
+    };
+    const size_t buf_size = sizeof(struct _Data) + num_entries * sizeof(nvioctl_gpfifo_entry);
+    struct _Data *data = (struct _Data*)(alloca(buf_size));
 
-    data.entries = (nvioctl_gpfifo_entry*)(malloc(num_entries * sizeof(nvioctl_gpfifo_entry)));
-    memset(&data, 0, sizeof(data));
-    data.gpfifo = (u64)data.entries; // ignored
-    data.num_entries = num_entries;
-    data.flags = flags;
-    data.fence = *fence_inout;
-    memcpy(data.entries, entries, sizeof(data.entries));
+    memset(data, 0, buf_size);
+    data->gpfifo = (u64)data->entries; // ignored
+    data->num_entries = num_entries;
+    data->flags = flags;
+    data->fence = *fence_inout;
+    memcpy(&data->entries[0], entries, num_entries * sizeof(nvioctl_gpfifo_entry));
 
-    rc = nvIoctl(fd, _NV_IOWR(0x48, 0x08, data), &data);
+    rc = nvIoctl(fd, _NV_IOWR(0x48, 0x08, data), data);
 
     if (R_SUCCEEDED(rc)) {
-        *fence_inout = data.fence;
+        *fence_inout = data->fence;
     }
-
-    free(data.entries);
 
     return rc;
 }
@@ -207,50 +206,54 @@ Result nvioctlChannel_Submit(u32 fd, const nvioctl_cmdbuf *cmdbufs, u32 num_cmdb
     if (num_cmdbufs + num_relocs + num_syncpt_incrs + num_fences > 0x200)
         return MAKERESULT(Module_Libnx, LibnxError_OutOfMemory);
 
-    struct {
+    struct _Data {
         __nv_in  u32                 num_cmdbufs;
         __nv_in  u32                 num_relocs;
         __nv_in  u32                 num_syncpt_incrs;
         __nv_in  u32                 num_fences;
-        __nv_in  nvioctl_cmdbuf      *cmdbufs;
-        __nv_in  nvioctl_reloc       *relocs;
-        __nv_in  nvioctl_reloc_shift *reloc_shifts;
-        __nv_in  nvioctl_syncpt_incr *syncpt_incrs;
-        __nv_in  nvioctl_syncpt_incr *wait_checks;
-        __nv_out nvioctl_fence       *fences;
-    } data;
+        /*__nv_in  nvioctl_cmdbuf      cmdbufs     [num_cmdbufs];
+        __nv_in  nvioctl_reloc       relocs      [num_relocs];
+        __nv_in  nvioctl_reloc_shift reloc_shifts[num_relocs];
+        __nv_in  nvioctl_syncpt_incr syncpt_incrs[num_syncpt_incrs];
+        __nv_in  nvioctl_syncpt_incr wait_checks [num_syncpt_incrs];
+        __nv_out nvioctl_fence       fences      [num_fences]; */
+    };
 
-    data.cmdbufs = (nvioctl_cmdbuf*)malloc(num_cmdbufs * sizeof(nvioctl_cmdbuf));
-    data.relocs = (nvioctl_reloc*)malloc(num_relocs * sizeof(nvioctl_reloc));
-    data.reloc_shifts = (nvioctl_reloc_shift*)malloc(num_relocs * sizeof(nvioctl_reloc_shift));
-    data.syncpt_incrs = (nvioctl_syncpt_incr*)malloc(num_syncpt_incrs * sizeof(nvioctl_syncpt_incr));
-    data.wait_checks = (nvioctl_syncpt_incr*)malloc(num_syncpt_incrs * sizeof(nvioctl_syncpt_incr));
-    data.fences = (nvioctl_fence*)malloc(num_fences * sizeof(nvioctl_fence));
+    const size_t buf_size = sizeof(struct _Data) +
+                            sizeof(nvioctl_cmdbuf) * num_cmdbufs +
+                            sizeof(nvioctl_reloc) * num_relocs +
+                            sizeof(nvioctl_reloc_shift) * num_relocs +
+                            sizeof(nvioctl_syncpt_incr) * num_syncpt_incrs +
+                            sizeof(nvioctl_syncpt_incr) * num_syncpt_incrs +
+                            sizeof(nvioctl_fence) * num_fences;
+    char *buf = (char *)alloca(buf_size);
+    memset(buf, 0, buf_size);
 
-    memset(&data, 0, sizeof(data));
-    data.num_cmdbufs      = num_cmdbufs;
-    data.num_relocs       = num_relocs;
-    data.num_syncpt_incrs = num_syncpt_incrs;
-    data.num_fences       = num_fences;
-    memcpy(data.cmdbufs,      cmdbufs,      sizeof(data.cmdbufs));
-    memcpy(data.relocs,       relocs,       sizeof(data.relocs));
-    memcpy(data.reloc_shifts, reloc_shifts, sizeof(data.reloc_shifts));
-    memcpy(data.syncpt_incrs, syncpt_incrs, sizeof(data.syncpt_incrs));
+    struct _Data *data = (struct _Data *)buf;
+    data->num_cmdbufs      = num_cmdbufs;
+    data->num_relocs       = num_relocs;
+    data->num_syncpt_incrs = num_syncpt_incrs;
+    data->num_fences       = num_fences;
 
-    Result rc = nvIoctl(fd, _NV_IOWR(0, 0x01, data), &data);
+    nvioctl_cmdbuf *data_cmdbufs           = (nvioctl_cmdbuf*)(buf + sizeof(struct _Data));
+    nvioctl_reloc *data_relocs             = (nvioctl_reloc*)((char*)data_cmdbufs + sizeof(nvioctl_cmdbuf) * num_cmdbufs);
+    nvioctl_reloc_shift *data_reloc_shifts = (nvioctl_reloc_shift*)((char*)data_relocs + sizeof(nvioctl_reloc) * num_relocs);
+    nvioctl_syncpt_incr *data_syncpt_incrs = (nvioctl_syncpt_incr*)((char*)data_reloc_shifts + sizeof(nvioctl_reloc_shift) * num_relocs);
+    nvioctl_syncpt_incr *data_wait_checks  = (nvioctl_syncpt_incr*)((char*)data_syncpt_incrs + sizeof(nvioctl_syncpt_incr) * num_syncpt_incrs);
+    nvioctl_fence *data_fences             = (nvioctl_fence*)((char*)data_wait_checks + sizeof(nvioctl_syncpt_incr) * num_syncpt_incrs);
+
+    memcpy(data_cmdbufs,      cmdbufs,      sizeof(nvioctl_cmdbuf) * num_cmdbufs);
+    memcpy(data_relocs,       relocs,       sizeof(nvioctl_reloc) * num_relocs);
+    memcpy(data_reloc_shifts, reloc_shifts, sizeof(nvioctl_reloc_shift) * num_relocs);
+    memcpy(data_syncpt_incrs, syncpt_incrs, sizeof(nvioctl_syncpt_incr) * num_syncpt_incrs);
+
+    Result rc = nvIoctl(fd, _NV_IOWR_(0, 0x01, buf_size), &data);
 
     if (R_SUCCEEDED(rc)) {
-        memcpy(fences, data.fences, num_fences * sizeof(nvioctl_fence));
+        memcpy(fences, data_fences, num_fences * sizeof(nvioctl_fence));
         for (int i = 0; i < num_fences; ++i)
-            fences[i].id = data.syncpt_incrs[i].syncpt_id;
+            fences[i].id = data_syncpt_incrs[i].syncpt_id;
     }
-
-    free(data.cmdbufs);
-    free(data.relocs);
-    free(data.reloc_shifts);
-    free(data.syncpt_incrs);
-    free(data.wait_checks);
-    free(data.fences);
 
     return rc;
 }
@@ -292,26 +295,25 @@ Result nvioctlChannel_MapCommandBuffer(u32 fd, nvioctl_command_buffer_map *maps,
     if (num_maps > 0x200)
         return MAKERESULT(Module_Libnx, LibnxError_OutOfMemory);
 
-    struct {
+    struct _Data {
         __nv_in    u32                        num_maps;
         __nv_in    u32                        reserved;
         __nv_in    u8                         is_compressed;
-        __nv_inout nvioctl_command_buffer_map *maps;
-    } data;
+        __nv_inout nvioctl_command_buffer_map maps[];
+    };
 
-    data.maps = (nvioctl_command_buffer_map*)malloc(num_maps * sizeof(nvioctl_command_buffer_map));
+    const size_t buf_size = sizeof(struct _Data) + num_maps * sizeof(nvioctl_command_buffer_map);
+    struct _Data *data = (struct _Data*)alloca(buf_size);
 
-    memset(&data, 0, sizeof(data));
-    data.num_maps      = num_maps;
-    data.is_compressed = compressed;
-    memcpy(data.maps, maps, sizeof(data.maps));
+    memset(data, 0, buf_size);
+    data->num_maps      = num_maps;
+    data->is_compressed = compressed;
+    memcpy(&data->maps[0], maps, num_maps * sizeof(nvioctl_command_buffer_map));
 
-    Result rc = nvIoctl(fd, _NV_IOWR(0, 0x09, data), &data);
+    Result rc = nvIoctl(fd, _NV_IOWR_(0, 0x09, buf_size), &data);
 
     if (R_SUCCEEDED(rc))
-        memcpy(maps, data.maps, num_maps * sizeof(nvioctl_command_buffer_map));
-
-    free(data.maps);
+        memcpy(maps, data->maps, num_maps * sizeof(nvioctl_command_buffer_map));
 
     return rc;
 }
@@ -320,21 +322,20 @@ Result nvioctlChannel_UnmapCommandBuffer(u32 fd, const nvioctl_command_buffer_ma
     if (num_maps > 0x200)
         return MAKERESULT(Module_Libnx, LibnxError_OutOfMemory);
 
-    struct {
+    struct _Data {
         __nv_in    u32                        num_maps;
         __nv_in    u32                        reserved;
         __nv_in    u8                         is_compressed;
-        __nv_inout nvioctl_command_buffer_map *maps;
-    } data;
+        __nv_inout nvioctl_command_buffer_map maps[];
+    };
 
-    data.maps = (nvioctl_command_buffer_map*)malloc(num_maps * sizeof(nvioctl_command_buffer_map));
+    const size_t buf_size = sizeof(struct _Data) + num_maps * sizeof(nvioctl_command_buffer_map);
+    struct _Data *data = (struct _Data*)alloca(buf_size);
 
-    memset(&data, 0, sizeof(data));
-    data.num_maps      = num_maps;
-    data.is_compressed = compressed;
-    memcpy(data.maps, maps, sizeof(data.maps));
+    memset(data, 0, buf_size);
+    data->num_maps      = num_maps;
+    data->is_compressed = compressed;
+    memcpy(&data->maps[0], maps, num_maps * sizeof(nvioctl_command_buffer_map));
 
-    free(data.maps);
-
-    return nvIoctl(fd, _NV_IOWR(0, 0x0a, data), &data);
+    return nvIoctl(fd, _NV_IOWR_(0, 0x0a, buf_size), &data);
 }
