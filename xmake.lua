@@ -1,14 +1,18 @@
 includes("xmake/**.lua")
 
+add_requires("switch-newlib")
+
 target("nx")
     set_kind("$(kind)")
     add_rules("mode.debug", "mode.release")
+
+    add_packages("switch-newlib")
 
     add_rules("bin2s")
 
     set_languages("gnu11")
 
-    add_defines("LIBNX_NO_DEPRECATION")
+    add_defines("LIBNX_NO_DEPRECATION", {public = true})
 
     add_files("nx/**.c")
     add_files("nx/**.s")
