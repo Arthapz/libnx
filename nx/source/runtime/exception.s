@@ -15,7 +15,6 @@
 
 .weak __libnx_exception_handler
 
-.weak __libnx_exception_entry
 CODE_BEGIN __libnx_exception_entry
     cmp x1, #0
     beq __libnx_exception_entry_abort
