@@ -1,10 +1,14 @@
 includes("xmake/**.lua")
 
-add_requires("switch-newlib")
+add_rules("mode.debug", "mode.release")
+
+set_allowedplats("switch")
+set_allowedarchs("switch|aarch64")
+
+add_requires("switch-newlib", {debug = is_mode("debug")})
 
 target("nx")
     set_kind("$(kind)")
-    add_rules("mode.debug", "mode.release")
 
     add_packages("switch-newlib")
 
