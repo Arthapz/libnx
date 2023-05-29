@@ -6,12 +6,12 @@ set_allowedplats("switch")
 set_allowedarchs("switch|aarch64")
 
 add_requires("switch-llvm", {host = true})
-add_requires("switch-llvm-runtimes", "switch-newlib", {debug = is_mode("debug")})
+add_requires("switch-newlib", {debug = is_mode("debug")})
 
 target("nx")
     set_kind("$(kind)")
 
-    add_packages("switch-llvm-runtimes", "switch-llvm", "switch-newlib")
+    add_packages("switch-llvm", "switch-newlib")
 
     add_rules("bin2s")
 
