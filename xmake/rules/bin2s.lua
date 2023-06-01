@@ -35,14 +35,14 @@ before_build(function(target, opt)
                     #ifdef __cplusplus >= 201103L
                         #include <array>
 
-                        static constexpr std::size_t %s_size = %s;
+                        static constexpr std::size_t %s_size = %i;
                         static constexpr auto %s = std::array<std::uint8_t, %s_size> {
                     #else
                         #ifdef __cplusplus
-                            static const std::size_t %s_size = %s;
+                            static const std::size_t %s_size = %i;
                             static const std::uint8_t %s[] = {
                         #else
-                            static const size_t %s_size = %s;
+                            static const size_t %s_size = %i;
                             static const uint8_t %s[] = {
                         #endif
                     #endif
